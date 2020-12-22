@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include afamjal *.css
+recursive-include afamjal *.csv
+recursive-include afamjal *.html
+recursive-include afamjal *.ico
+recursive-include afamjal *.js
+recursive-include afamjal *.json
+recursive-include afamjal *.md
+recursive-include afamjal *.png
+recursive-include afamjal *.py
+recursive-include afamjal *.svg
+recursive-include afamjal *.txt
+recursive-exclude afamjal *.pyc
