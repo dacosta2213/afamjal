@@ -24,8 +24,8 @@ def update_pe(doc,method):
 @frappe.whitelist()
 def finalizar_so(doc,method):
     frappe.errprint(method)
-    if len(doc.items) > 1:
-        frappe.throw('Hay mas de 1 concepto en el contrato.')
+    # if len(doc.items) > 1:
+    #     frappe.throw('Hay mas de 1 concepto en el contrato.')
 
 # RG - Procesos Update SO- 9Dic 2020
 @frappe.whitelist()
@@ -54,7 +54,7 @@ def add_pe_lineas(name):
     if existe:
         frappe.throw('Ya existen lineas de pago. Para volver a cargar, borre las lineas existentes.')
         # return
-    lineas = frappe.db.sql(""" SELECT payment_term,description,due_date,invoice_portion,payment_amount,status from `tabPayment Schedule` WHERE parenttype="Sales Order" AND parent=%s ORDER BY due_date ASC""", (doc.references[0].reference_name), as_dict=1)
+    lineas = frappe.db.sql(""" SELECT payment_term,description,due_date,invoice_portion,payment_amount,status from `tabPayment Schedule` WHERE parenttype="Sales Invoice" AND parent=%s ORDER BY due_date ASC""", (doc.references[0].reference_name), as_dict=1)
     # frappe.errprint(lineas)
     for l in lineas:
         frappe.errprint(l.payment_term)
@@ -122,18 +122,46 @@ def crear_pago(item,customer):
 
 
 @frappe.whitelist()
-def descuento(name,descuento):
+def descuento(name,descuento=None):
+    if not descuento:
+        return
     doc = frappe.get_doc('Sales Order', name)
     frappe.errprint(doc.descuento)
     existe =  frappe.db.sql(""" SELECT cantidad from `tabTipo Evento Descuento` WHERE parent=%s AND name=%s""", (doc.tipo_evento,descuento), as_dict=1)
-    return existe
-    if existe:
-        frappe.errprint('ya existen lineas')
-        return
+    frappe.errprint(existe[0].cantidad)
+    factor = existe[0].cantidad * 0.01
+    # descuento = (doc.items[0].price_list_rate * doc.items[0].qty ) / existe[0].cantidad
+    descuento = doc.items[0].amount *  factor
+    frappe.errprint(descuento)
+    return descuento
+    # if existe:
+    #     frappe.errprint('ya existen lineas')
+    #     return
 #
 # @frappe.whitelist()
 # def validaciones_so(name):
 
+
+@frappe.whitelist()
+def cuotas(name='I00010'):
+    doc = frappe.get_doc('Sales Order', name)
+    if len(doc.items) == 0:
+        frappe.throw('No existen conceptos en el contrato. Cargar 1 concepto antes de aplicar la cuota')
+    doc.append("items", {
+			"item_code": "CUOTA Contratos" ,
+			"qty": 1,
+			"rate": doc.cuota * -1
+		})
+    doc.append("taxes", {
+			"charge_type": "Actual" ,
+			"account_head": "2202011001 - Cuotas Por Devengar - ERP",
+			"description": "Cuota",
+            "tax_amount": doc.cuota
+		})
+    doc.aplicar_cuota = 1
+    doc.save()
+    frappe.msgprint('Cuota Aplicada')
+    return
 
 
 
@@ -142,6 +170,7 @@ def descuento(name,descuento):
 #  append al self.items
 #  cantidad 1
 #  rate desde (get value de precio_base de DT  Periodos de Venta del parent item WHERE item and delivery_date BETWEEN fecha_inicio AND fecha_fin
+
 
 @frappe.whitelist()
 def add_lineas(name='I00010'):

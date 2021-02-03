@@ -28,6 +28,18 @@ frappe.ui.form.on('Sales Order', {
          }
        })
  },
+  aplicar_cuota: function(frm) {
+       frappe.call({
+         method: 'afamjal.api.cuotas',
+         args:{
+           name: frm.doc.name
+         },
+         callback: function(r){
+           console.log(r)
+           frm.reload_doc()
+         }
+       })
+ },
 	validate: function(frm) {
 		// frappe.errprint('En validei')
 		// if (!cur_frm.doc.__islocal) {
@@ -40,8 +52,9 @@ frappe.ui.form.on('Sales Order', {
 		// 		})
 		// }
 	},
-	refresh: function(frm) {
+	setup: function(frm) {
 			if (frm.doc.tipo_cliente === 'SOCIO'){
+					console.log('es cliente SOCIO')
 					if (frm.doc.cantidad_certificados > 0){
 							frm.set_query('descuento', () => {
 				          return {
@@ -77,7 +90,9 @@ frappe.ui.form.on('Sales Order', {
 			}
 
 			if (frm.doc.tipo_cliente === 'GENERAL'){
+				console.log('es cliente general')
 					if (frm.doc.cantidad_certificados > 0){
+							console.log('cantidad_certificados > 0')
 							frm.set_query('descuento', () => {
 				          return {
 				              filters: {
@@ -89,6 +104,7 @@ frappe.ui.form.on('Sales Order', {
 					}
 
 					if (frm.doc.cantidad_certificados_participacion > 0){
+							console.log('cantidad_certificados_participacion > 0')
 							frm.set_query('descuento', () => {
 				          return {
 				              filters: {
@@ -100,6 +116,7 @@ frappe.ui.form.on('Sales Order', {
 					}
 
 					if (frm.doc.cantidad_certificados_participacion == 0 && frm.doc.cantidad_certificados == 0){
+							console.log('Ningun Cert')
 							frm.set_query('descuento', () => {
 				          return {
 				              filters: {
@@ -124,8 +141,11 @@ frappe.ui.form.on('Sales Order', {
         descuento: frm.doc.descuento
       },
       callback: function(r){
-        console.log(r.message[0].cantidad)
-        frm.set_value('additional_discount_percentage', r.message[0].cantidad)
+					  console.log(r.message)
+					frm.set_value('discount_amount', r.message)
+
+        // frm.set_value('additional_discount_percentage', r.message[0].cantidad)
+
         // cur_frm.reload_doc()
       }
     })
@@ -134,3 +154,16 @@ frappe.ui.form.on('Sales Order', {
 
   }
 })
+
+frappe.ui.form.on('Sales Order', {
+	refresh: function(frm) {
+		frm.set_value("total_contratado", frm.doc.grand_total*1);
+	}
+});
+
+
+//frappe.ui.form.on("Sales Order", "before_submit", function(frm, cdt, cdn) {
+//if (frm.doc.suma_total != frm.doc.total_contratado) {
+//frappe.throw("La cantidad de la suma total es diferente al total contratado");
+//return false;
+//} });
